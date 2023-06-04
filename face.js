@@ -31,29 +31,25 @@ function segment_average(segment) {
 }
 
 // This where you define your own face object
-function Face(hourParam, minuteParam, eyeballSize, eyeYOffset, pupilOffset, eyeCorner1, eyeCorner2, clockCorner1, clockCorner2, clockCorner3, clockCorner4) {
+function Face(hourParam, minuteParam, eyeballSize, pupilOffset, eyeCorner1, eyeCorner2, clockCorner1, clockCorner2, clockCorner3, clockCorner4) {
   // Clock face parameters
   this.clockSize = 5; // base clock size
   this.clockX = 0; // clock X location
   this.clockY = 0; // clock Y location
   this.notchSize = 0.6; // notch size
-  this.clockColor = color(255); // clock colour
+  
   this.shadowColor = color(0, 255); // clock shadow colour
   this.shadowOffset = 0.2; // shadow offset
-  this.notchColor = color(0); // notch colour
+
   
-  this.handColor = 0; // hand colour
-  this.eyeX = this.clockX - 1; // eye X location (reletave to clockX)
-  this.eyeY = this.clockY - 1; // eye Y location (reletave to clockY)
+
   this.eyeSize = 1.6; // eye size
-  this.eyeRightOffset = 2; // second eye X offset
 
-
+  this.clockColor = color(100); // clock colour
 
   this.hourParam = 0; // hour hand
   this.minuteParam = 0; // minute hand
   this.eyeballSize = 1; // eyeball Size
-  this.eyeYOffset = 0; // eyeYOffset
   this.pupilOffset = 0; // pupil offset
   this.eyeCorner1 = 1; // eye roundness 1
   this.eyeCorner2 = 1; // eye roundness 2
@@ -62,6 +58,10 @@ function Face(hourParam, minuteParam, eyeballSize, eyeYOffset, pupilOffset, eyeC
   this.clockCorner3 = 1.5; // clock roundness 3
   this.clockCorner4 = 1.5; // clock roundness 4
 
+  this.pupilSize = 0.5;
+
+  this.strokeThick = 0; // stroke weight 
+  this.strokeColor = color(255); // notch colour
 
   /*
    * Draw the face with position lists that include:
@@ -70,38 +70,24 @@ function Face(hourParam, minuteParam, eyeballSize, eyeYOffset, pupilOffset, eyeC
    */  
   this.draw = function(positions) {
 
+
+    this.averageLeftEye = segment_average(positions.left_eye)
+    this.averageRightEye = segment_average(positions.right_eye)
+
+
     push();
     rectMode(CENTER)
-    //scale(0.2);
 
-    // Left Eye Base
-    noStroke()
-    fill(this.clockColor)
-    rect(this.eyeX, this.eyeY + this.eyeYOffset, this.eyeSize, this.eyeSize, this.eyeCorner1, this.eyeCorner2)
 
-    // Left Eye Ball
-    fill(this.notchColor);
-    ellipse(this.eyeX, this.eyeY + this.eyeYOffset, this.eyeballSize, this.eyeballSize)
 
-    // Left Eye Pupil
-    fill(this.clockColor)
-    ellipse(this.eyeX + this.pupilOffset, this.eyeY + this.eyeYOffset, this.eyeballSize*0.3, this.eyeballSize*0.4)
 
-    // Right Eye Base
-    noStroke()
-    fill(this.clockColor)
-    rect(this.eyeX + this.eyeRightOffset, this.eyeY + this.eyeYOffset, this.eyeSize, this.eyeSize, this.eyeCorner1, this.eyeCorner2)
 
-    // Right Eye Ball
-    fill(this.notchColor);
-    ellipse(this.eyeX + this.eyeRightOffset, this.eyeY + this.eyeYOffset, this.eyeballSize, this.eyeballSize)
+    
 
-    // Right Eye Pupil
-    fill(this.clockColor)
-    ellipse(this.eyeX + this.pupilOffset + this.eyeRightOffset, this.eyeY + this.eyeYOffset, this.eyeballSize*0.3, this.eyeballSize*0.4)
 
     // Draw clock shadow
-    fill(this.shadowColor);
+    noStroke();
+    fill(this.strokeColor);
     rect(this.clockX + this.shadowOffset, this.clockY + this.shadowOffset, this.clockSize, this.clockSize, this.clockCorner1, this.clockCorner2, this.clockCorner3, this.clockCorner4);
 
     // Draw clock face
@@ -109,8 +95,8 @@ function Face(hourParam, minuteParam, eyeballSize, eyeYOffset, pupilOffset, eyeC
     rect(this.clockX, this.clockY, this.clockSize, this.clockSize, this.clockCorner1, this.clockCorner2, this.clockCorner3, this.clockCorner4);
 
     // Draw hour notches
-    strokeWeight(0.2);
-    stroke(this.notchColor);
+    strokeWeight(this.strokeThick);
+    stroke(this.strokeColor);
     noFill();
     for (let i = 0; i < 12; i++) {
       let angle = i * 30 - 90; // 30 degrees per hour
@@ -121,19 +107,76 @@ function Face(hourParam, minuteParam, eyeballSize, eyeYOffset, pupilOffset, eyeC
       line(x1, y1, x2, y2);
     }
 
-    // Draw hour hand
-    let hourSize = this.clockSize / 2;
-    let hourAngle = map(this.hourParam % 12, 0, 12, 0, 360);
-    strokeWeight(0.3);
-    stroke(this.handColor);
-    line(this.clockX, this.clockY, this.clockX + cos(hourAngle - 90) * hourSize, this.clockY + sin(hourAngle - 90) * hourSize);
 
-    // Draw minute hand
-    let minuteSize = this.clockSize / 2.5;
-    let minuteAngle = map(this.minuteParam, 0, 60, 0, 360);
-    strokeWeight(0.3);
-    stroke(this.handColor);
-    line(this.clockX, this.clockY, this.clockX + cos(minuteAngle - 90) * minuteSize, this.clockY + sin(minuteAngle - 90) * minuteSize);
+
+    this.topNose = positions.nose_bridge[0]
+    this.bottomNose = positions.nose_tip[2]
+
+    this.facingRightNose = positions.nose_tip[4]
+    this.facingLeftNose = positions.nose_tip[0]
+    this.noisePoint;
+
+    if(this.bottomNose < this.topNose){
+      this.noisePoint = this.facingRightNose;
+      this.pupilOffset = -0.2
+    }
+    else{
+      this.noisePoint = this.facingLeftNose;
+      this.pupilOffset = 0.2
+    }
+
+
+
+    //Nose
+    stroke(this.strokeColor);
+    strokeWeight(0.2)
+    line(this.topNose[0], this.topNose[1] + 0.4, this.bottomNose[0], this.bottomNose[1] + 0.4)
+    line(this.bottomNose[0], this.bottomNose[1] + 0.4, this.noisePoint[0], this.noisePoint[1] + 0.4)
+
+   
+
+    // Left Eye Base
+    strokeWeight(0.05)
+    fill(this.clockColor)
+    rect(this.averageLeftEye[0], this.averageLeftEye[1], this.eyeSize, this.eyeSize, this.eyeCorner1, this.eyeCorner2)
+
+    // Left Eye Ball
+    fill(this.strokeColor);
+    ellipse(this.averageLeftEye[0], this.averageLeftEye[1], this.eyeballSize, this.eyeballSize)
+
+    // Left Eye Pupil
+    fill(this.clockColor)
+    ellipse(this.averageLeftEye[0] + this.pupilOffset, this.averageLeftEye[1], this.eyeballSize*0.6, this.eyeballSize* this.pupilSize)
+
+    // Right Eye Base
+    strokeWeight(0.05)
+    fill(this.clockColor)
+    rect(this.averageRightEye[0], this.averageRightEye[1], this.eyeSize, this.eyeSize, this.eyeCorner1, this.eyeCorner2)
+
+    // Right Eye Ball
+    fill(this.strokeColor);
+    ellipse(this.averageRightEye[0], this.averageRightEye[1], this.eyeballSize, this.eyeballSize)
+
+    // Right Eye Pupil
+    fill(this.clockColor)
+    ellipse(this.averageRightEye[0] + this.pupilOffset, this.averageRightEye[1], this.eyeballSize*0.6, this.eyeballSize* this.pupilSize)
+
+    // // Draw hour hand
+    // let hourSize = this.clockSize / 2;
+    // let hourAngle = map(this.hourParam % 12, 0, 12, 0, 360);
+    // strokeWeight(0.3);
+    // stroke(this.strokeColor);
+    // line(this.clockX, this.clockY, this.clockX + cos(hourAngle - 90) * hourSize, this.clockY + sin(hourAngle - 90) * hourSize);
+
+    // // Draw minute hand
+    // let minuteSize = this.clockSize / 2.5;
+    // let minuteAngle = map(this.minuteParam, 0, 60, 0, 360);
+    // strokeWeight(0.3);
+    // stroke(this.strokeColor);
+    // line(this.clockX, this.clockY, this.clockX + cos(minuteAngle - 90) * minuteSize, this.clockY + sin(minuteAngle - 90) * minuteSize);
+
+   
+
 
     pop();
 
@@ -161,11 +204,11 @@ function Face(hourParam, minuteParam, eyeballSize, eyeYOffset, pupilOffset, eyeC
 
   /* set internal properties based on list numbers 0-100 */
   this.setProperties = function(settings) {
-    this.hourParam = map(settings[0], 0, 100, 11, 0)
-    this.minuteParam = map(settings[1], 0, 100, 59, 0)
-    this.eyeballSize = map(settings[2], 0, 100, 0.5, 1.5)
-    this.eyeYOffset = map(settings[3], 0, 100, -2, -1)
-    this.pupilOffset = map(settings[4], 0, 100, -0.2, 0.2)
+    this.clockColor = map(settings[0], 0, 100, 80, 255)
+    this.pupilSize = map(settings[1], 0, 100, 0.3, 0.8)
+    this.eyeballSize = map(settings[2], 0, 100, 0.5, 1.6)
+    this.strokeThick = map(settings[3], 0, 100, 0.2, 0.4)
+    this.strokeColor = map(settings[4], 0, 100, 0, 200)
     this.eyeCorner1 = map(settings[5], 0, 100, 0.2, 2)
     this.eyeCorner2 = map(settings[6], 0, 100, 0.2, 2)
     this.clockCorner1 = map(settings[7], 0, 100, 0, 3)
@@ -177,17 +220,18 @@ function Face(hourParam, minuteParam, eyeballSize, eyeYOffset, pupilOffset, eyeC
   /* get internal properties as list of numbers 0-100 */
   this.getProperties = function() {
     let settings = new Array(3);
-    settings[0] = map(this.hourParam, 0, 11, 0, 100);
-    settings[1] = map(this.minuteParam, 0, 59, 0, 100);
-    settings[2] = map(this.eyeballSize, 0.5, 1.5, 0, 100);
-    settings[3] = map(this.eyeYOffset, -1, -2, 0, 100);
-    settings[4] = map(this.pupilOffset, -0.2, 0.2, 0, 100);
+    settings[0] = map(this.clockColor, 80, 255, 0, 100);
+    settings[1] = map(this.pupilSize, 0.3, 0.8, 0, 100);
+    settings[2] = map(this.eyeballSize, 0.5, 1.6, 0, 100);
+    settings[3] = map(this.strokeThick, 0.2, 0.4, 0, 100);
+    settings[4] = map(this.strokeColor, 0, 200, 0, 100);
     settings[5] = map(this.eyeCorner1, 0.2, 2, 0, 100);
     settings[6] = map(this.eyeCorner2, 0.2, 2, 0, 100);
     settings[7] = map(this.clockCorner1, 0, 3, 0, 100);
     settings[8] = map(this.clockCorner2, 0, 3, 0, 100);
     settings[9] = map(this.clockCorner3, 0, 3, 0, 100);
     settings[10] = map(this.clockCorner4, 0, 3, 0, 100);
+
     return settings;
   }
 }
